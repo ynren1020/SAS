@@ -1,0 +1,87 @@
+* Using Macro variables 
+- Typically used with only an ampersand & preceding it
+- To resolve a macro variable reference in a literal string, must enclose string in double quotation string ""
+- the values for automatic macro variables are set at SAS invocation and may not be the current date time
+
+%put _all_ ; * show all automatic SAS macro variables in log not in result;
+
+Macro function
+%substr
+%upcase
+%index
+%length
+
+%sysfunc - executes SAS functions
+%str, %BQUOTE - quoting function
+
+
+Example
+%let origin=Asia
+proc print data = sashelp.cars;
+title "Report for &origin";
+where origin = "&origin";
+run;
+
+The macro function %sysfunc can be used to return the current date and time in our example
+proc print data=sashelp.cars (obs=&obs);
+  title "Report for Vehicles from &origin (Rows Displayed:&obs)";
+  title2 "The current date and time is %sysfunc(today(),mmddyy8.) %sysfunc(time(), time.)";
+  var Make Model Type DriveTrain MSRP Invoice;
+  where Origin="&origin";
+  footnote;
+run;
+
+
+Define a Macro
+%MACRO macro-name;
+macro-text
+%MEND <macro-name>;
+
+Macro Programs - Define the Macro
+%macro carinfo;
+proc print data=sashelp.cars (obs = &obs);
+  title "Report for Vehicles from &origin (Rows Displayed:&obs)";
+  var Make Model Type DriveTrain MSRP Invoice;
+  where Origin="&origin";
+  footnote;
+
+proc means data=sashelp.cars;
+  title "Summary for Vehicles from &origin";
+  var MSRP Invoice Horsepower MPC_City MPG_Highway;
+  where Origin="&origin";
+run;
+%mend carinfo;
+
+Calling the Macro 
+%let origin=Asia;
+%let obs = 10;
+%carinfo;
+
+
+
+Macro programs - Parameters 
+%macro carinfo(origin);
+proc means data = sashelp.cars;
+title "Summary for Vehicles from &origin";
+var MSRP Invoice Horsepower MPG_City MPG_Highway;
+where Origin="&origin";
+run;
+%mend;
+
+Debugging
+options mprint
+options mcompilenote
+options symbolgen
+options mlogic  (can produce a great deal of output)
+* if you place these two lines at the start of your programs when you begin writing them, you will then be able to toggle one of these sets of options on or off as needed, 
+* simply by using the asterik to comment out the one you do not want to execute in a program submission:
+* OPTIONS NOMPRINT NOMLOGIC NOSYMBOLGEN MCOMPILENOTE=NONE;
+OPTIONS MPRINT MLOGIC SYMBOLGEN MCOMPILENOTE=ALL;
+
+
+%PUT _ALL_; *show all macro variables and their values
+
+%symdel xxx; delete specific macro variables from the global symbol table 
+
+
+
