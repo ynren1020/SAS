@@ -1,0 +1,111 @@
+***************************
+* Get data
+***************************;
+
+*** CLEAN UP LIBRARY AND TITLES ***;	
+
+proc datasets  library=work kill;  run; quit;
+title  ;
+footnote  ;
+
+
+%let studyname = study;
+
+* Root ;
+%let Root = \\path\Analysis\000000_work folder;
+%let Root1 = \\path1\Analysis\000000_work folder;
+
+	*** ODBC password ;
+%include "C:\Users\&sysuserid\OneDrive - Medtronic PLC\ODBC\password.sas"; 
+
+	*** OC study data - current view;
+/*libname opa	odbc user     = "&sysuserid"*/
+/*				pw   = "&password"*/
+/*				dsn    = ####.com*/
+/*				schema = "####$CURRENT" */
+/*				preserve_col_names = yes;*/
+
+	*** OC study data - OCT SNAPSHOT;
+/*libname opa	odbc user     = "&sysuserid"*/
+/*				pw   = "&password"*/
+/*				dsn    = ####.com*/
+/*				schema = "####$ADBSOCT2023" */
+/*				preserve_col_names = yes;*/
+
+*** Dec 05 2023 final datalock;
+libname opa	odbc user     = "&sysuserid"
+				pw   = "&password"
+				dsn    = ####.com
+				schema = "####$DBFINALLOCK" 
+				preserve_col_names = yes;
+
+	*** retrieve site names and investigator names;
+libname rxa_des	odbc user     = "&sysuserid"
+				pw   = "&password"
+				dsn    = ####.com
+				schema = "RXA_DES" 
+				preserve_col_names = yes;
+/*
+	*** retrieve the randomization assignment table;
+libname custom	odbc user     = "&sysuserid"
+				pw   = "&password"
+				dsn    = ####.com
+				schema = "MT_CUSTOM" 
+				preserve_col_names = yes;
+
+%let Date = %sysfunc(today(), yymmddn8.);
+%put &Date;
+*/
+
+	*** set up library;
+libname raw "&Root\Dataset\Rawdata";
+libname rawone "&Root1\Dataset\Rawdata";
+
+proc datasets; 
+	copy in=opa out=raw; 
+	exclude normdata normlab rdcms_view responses_view;  
+	run;quit; 
+
+
+	*** investigator and site names;
+proc sql ;
+	create table sitenames as
+		select OS.SITE as SITE_CODE, os.name, os.ADDRESS_LINE_1, os.ADDRESS_LINE_2, os.ADDRESS_LINE_3, os.city, os.state, os.postal_code, OSS.STUDY_SITE
+		from rxa_des.ocl_study_sites as oss, rxa_des.ocl_sites as os, rxa_des.clinical_studies as cs
+		where cs.study = '####'
+		and OSS.SITE_ID = OS.SITE_ID
+		and cs.clinical_study_id = oss.clinical_study_id
+		order by 1;
+	quit;
+
+data raw.sitenames; set sitenames ;
+	length sitenameaddress $1000. ;
+	if name = "#### Hospital" then name = "**** Hospital";
+	sitenameaddress = strip(name) ||'^n' || catx(' ',address_line_1,address_line_2,address_line_3) ||' '|| strip(city) ||', '|| strip(state) ||' '|| strip(postal_code) ;
+	if STUDY_SITE ne 'MUO';
+	invsite = site_code;
+run;
+
+proc sql ;
+	create table raw.invnames as
+	select distinct os.investigator, os.first_name, os.last_name, os.address_name, 
+			os.ADDRESS_LINE_1, os.ADDRESS_LINE_2, os.ADDRESS_LINE_3, os.city, 
+			os.state, os.country, os.postal_code, cs.inv, cs.invsite
+	from rxa_des.ocl_investigators as os, raw.icic as cs
+	where OS.investigator = cs.inv
+	order by 1;
+quit;
+
+proc sort data = raw.icic out = icic; by invsite; run;
+proc sort data = raw.invnames out = invnames; by invsite; run;
+
+data raw.sitenames;  merge icic (in=a) raw.sitenames invnames;
+  if a=1;
+  by invsite;
+  if first.invsite;
+  siteno = invsite;
+run;
+
+****************************************************************;
+* end of get data											    ;
+****************************************************************;
