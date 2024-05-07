@@ -17,3 +17,11 @@ data &data.;
   drop _type_ _freq_;
 run;
 %mend summary;
+
+* sort;
+*%procsort(in,out,by,options);;
+%macro procsort (in,out,by,options);
+proc sort data=&in out=&out &options;
+  by &by;
+run;
+%mend;
