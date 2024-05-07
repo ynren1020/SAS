@@ -1,0 +1,19 @@
+* summary ;
+%macro summary(data);
+proc means noprint data=&data.;
+  output out=summary sum=;
+run;
+
+data &data.;
+  set &data. summary (in=a);
+  if a then do;
+    siteno="00";
+    name="All";
+  end;
+  array zero _numeric_;
+    do over zero;
+      if zero=. then zero=0;
+    end;
+  drop _type_ _freq_;
+run;
+%mend summary;
