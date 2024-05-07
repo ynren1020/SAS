@@ -1,4 +1,7 @@
-* summary ;
+***************
+*** summary ;
+**************;
+
 %macro summary(data);
 proc means noprint data=&data.;
   output out=summary sum=;
@@ -18,7 +21,10 @@ data &data.;
 run;
 %mend summary;
 
-* sort;
+***********
+*** sort;
+************;
+
 *%procsort(in,out,by,options);;
 %macro procsort (in,out,by,options);
 proc sort data=&in out=&out &options;
