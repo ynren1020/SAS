@@ -1,0 +1,39 @@
+
+* use proc copy;
+proc copy in=npu_main out=yr memtype=data;
+    select npu_ngrc_adjustment_summ NPU_NGRC_TRANS_TIME_SETTING; *only select two datasets for test;
+run;
+
+
+**** another way ****;
+* to display only datasets in a library;
+proc datasets library=work memtype=data;
+run;
+quit;
+
+* copy all the datasets in one library to another;
+proc datasets;
+copy in=work out=mylib;
+run;
+quit;
+
+* copy some of the datasets ;
+proc datasets;
+copy in=npu_main out=yr;
+select NPU_NGRC_:; *only datasets starting with npu_ngrc will be copied;
+run;
+quit;
+
+
+**** anotherway ****;
+proc contents data = npu_main._all_  out=contents(keep=memname); run; *this command generated error message*;
+
+data _null_;
+	set contents;
+    if substr(memname, 1,9) = 'npu_ngrc_' then do;
+    call execute('proc datasets lib=npu_main nolist;');
+	call execute('copy out=xx; select ' || memname || '; quit;');
+	end;
+run;
+
+proc datasets lib=xx; run;
