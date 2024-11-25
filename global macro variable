@@ -1,0 +1,14 @@
+
+*Get counts for disposition;
+proc sql;
+       select count(distinct subjid) into:nPtEnrl from adsl;
+        select count(distinct subjid) into:nPtPost2010 from adsl where (rficdt>"15APR2010"D);
+      select count(distinct subjid) into:nPtDPN from adsl_DN;
+       select count(distinct subjid) into:nPtDPNImp from impl_DN ;
+quit; 
+data ah.DispCounts;
+	Countcat = 'Number Enrolled            '; count = &nPtEnrl; output;
+	Countcat = 'Number Enrolled Post-2010'; count = &nPtPost2010; output;
+	Countcat = 'Number DPN'; count = &nPtDPN; output;
+	Countcat = 'Number Implanted DPN'; count = &nPtDPNImp; output;
+run;
