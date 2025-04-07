@@ -1,0 +1,20 @@
+* separate string into parts by delimiters;
+
+data separated;
+    input original_string $50.;
+    
+    /* Use SCAN function to extract parts based on delimiters */
+    part1 = scan(original_string, 1, '|');
+    part2_with_suffix = scan(original_string, 2, '|');
+    part2 = scan(part2_with_suffix, 1, '_');
+    part3 = scan(part2_with_suffix, 2, '_');
+    
+    /* Keep only the separated parts */
+    keep part1 part2 part3;
+datalines;
+|| W003456 || L12234567_1
+;
+run;
+
+proc print data=separated;
+run;
