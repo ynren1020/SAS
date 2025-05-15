@@ -1,0 +1,26 @@
+%macro multi_transpose(data=, by=, id=, vars=, out=);
+    %local i var;
+    %let i = 1;
+    %let var = %scan(&vars, &i);
+    
+    %do %while(%length(&var));
+        proc transpose data=&data out=trans_&var prefix=&var._;
+            by &by;
+            id &id;
+            var &var;
+        run;
+        
+        %let i = %eval(&i + 1);
+        %let var = %scan(&vars, &i);
+    %end;
+
+    /* Merge all transposed datasets */
+    data &out;
+        merge
+        %do i = 1 %to %eval(%sysfunc(countw(&vars)));
+            trans_%scan(&vars, &i)
+        %end;
+        ;
+        by &by;
+    run;
+%mend;
